@@ -22,6 +22,7 @@ public class Maze {
                 nodes[i][j] = new Node(i, j);
                 nodes[i][j].setCondition(-1);
                 unvisited.add(nodes[i][j]);
+                printMz();
             }
         }
 		nodes[1][1].setCondition(0);
