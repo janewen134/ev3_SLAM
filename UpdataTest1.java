@@ -24,6 +24,11 @@ import lejos.robotics.localization.OdometryPoseProvider;
 import lejos.robotics.navigation.*;
 import lejos.utility.Delay;
 
+import java.io.*;
+import java.net.*;
+import lejos.hardware.Battery;
+
+
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -34,6 +39,7 @@ import java.util.Set;
 import java.util.Stack;
 public class UpdataTest1 {
 	static Car car = new Car();
+	public static final int port = 1234;
     static Maze maze = new Maze(19, 13); //13, 19
     static int heading = 0;
 	static int i = 1;
@@ -42,9 +48,14 @@ public class UpdataTest1 {
     static boolean hasEastWall = false;
     static boolean hasWestWall = false;
     static Stack<Node> visitstack = new Stack<Node>();  // u should new it first and then u could use the stack
-    
-	public static void main(String[] args) {
+    static Stack<Node> backstack = new Stack<Node>();
+    static ServerSocket server = new ServerSocket(port);
+    static Socket client = new server.accept();
+	public static void main(String[] args) throws IOException{
 		car.buttons.waitForAnyPress();
+		
+		System.out.println("Awaiting client..");
+		
 		//visitstack.push(maze.nodes[i][j]);
         while (car.isEscapeUp()) {
         	LCD.clear();
@@ -54,6 +65,7 @@ public class UpdataTest1 {
         	LCD.clear();
         	LCD.drawString("heading:"+heading, 0, 4);
         	visitstack.push(maze.nodes[i][j]);
+        	backstack.push(maze.nodes[i][j]);
         	maze.nodes[i][j].setCondition(0); //!!!!!!!!!!!
         	
         	if (car.isGreen2()) {
@@ -70,6 +82,7 @@ public class UpdataTest1 {
         	}
         	if (car.isRed2()) {
         		maze.nodes[i][j].isDestination = true;
+        		gohome();
         		car.LEFT_MOTOR.stop();
         		car.RIGHT_MOTOR.stop();
         		System.exit(0);
@@ -136,7 +149,117 @@ public class UpdataTest1 {
 	
 	
 	
-	 private static void backtrack() {
+	 private static void gohome() {
+		// TODO Auto-generated method stub
+		 backstack.pop();
+		 while (!visitstack.isEmpty()) {
+			 
+			 switch (heading) {
+				case 0: 
+					if (i == visitstack.peek().getX()) {
+						if (j +2 == visitstack.pop().getY()) {
+							goToNorth();
+							//break;
+						} else //if (j - 2 == visitstack.pop().getY()) 
+						{
+							goToSouth();
+							//break;
+						}
+					}
+					else if (j == visitstack.peek().getY()) {
+						if (i + 2 == visitstack.pop().getX()) {
+							goToEast();
+							//break;
+						}
+						else //if (i - 2 == visitstack.pop().getY()) 
+							{
+							goToWest();
+							//break;
+						}
+					}
+					break;
+				case 1:
+					if (i == visitstack.peek().getX()) {
+						if (j +2 == visitstack.pop().getY()) {
+							goToSouth();
+							//break;
+						} else// if (j - 2 == visitstack.pop().getY()) 
+							{
+							goToNorth();
+							//break;
+						}
+						
+					}
+					
+					if (j == visitstack.peek().getY()) {
+						if (i + 2 == visitstack.pop().getX()) {
+							goToWest();
+							//break;
+						}
+						else //if (i - 2 == visitstack.pop().getY()) 
+							{
+							goToEast();
+							//break;
+						}
+					}
+					break;
+				case 2:
+					if (i == visitstack.peek().getX()) {
+						if (j +2 == visitstack.pop().getY()) {
+							goToEast();
+							//break;
+						} else //if (j - 2 == visitstack.pop().getY()) 
+							{
+							goToWest();
+							//break;
+						}
+					}
+					if (j == visitstack.peek().getY()) {
+						if (i + 2 == visitstack.pop().getX()) {
+							goToSouth();
+							//break;
+						}
+						//if (i - 2 == visitstack.pop().getY()) 
+						else {
+							goToNorth();
+							//break;
+						}
+					}
+					break;
+				case 3:
+					if (i == visitstack.peek().getX()) {
+						if (j +2 == visitstack.pop().getY()) {
+							goToWest();
+							//break;
+						} else //if (j - 2 == visitstack.pop().getY())
+							{
+							goToEast();
+							//break;
+						}
+					}
+					if (j == visitstack.peek().getY()) {
+						if (i + 2 == visitstack.pop().getX()) {
+							goToNorth();
+							//break;
+						}
+						//if (i - 2 == visitstack.pop().getY())
+						else {
+							goToSouth();
+							//break;
+						}
+					}
+				break;
+				}
+				continue;
+			//}
+			
+		}
+		 
+	}
+
+
+
+	private static void backtrack() {
 		// TODO Auto-generated method stub
 		 
 //		goToSouth();
@@ -588,7 +711,7 @@ public class UpdataTest1 {
 		}
 	}
 	
-	private static void checkAround() {
+	private static void checkAround() throws IOException {
 		float distance;
 		
 		//LCD.drawString("heading: "+ heading, 0, 1);            
@@ -610,7 +733,13 @@ public class UpdataTest1 {
 			maze.nodes[i][j].isRoot = true;
 			maze.nodes[i][j].isNorthAvail = true;
 		}          
+		System.out.println("CONNECTED");
+		OutputStream out = client.getOutputStream();
+		DataOutputStream dOut = new DataOutputStream(out);
 		
+		dOut.writeUTF(maze.nodes.toString());
+		dOut.flush();
+		server.close();
 		        
 		distance = 0;
 		// checking the west
